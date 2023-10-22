@@ -1,0 +1,216 @@
+
+tts_model_id: 'ljspeech_tts'
+data_path: 'data'                                         # output data path
+
+tts_model: 'forward_tacotron'                             # choices: [forward_tacotron, fast_pitch]
+
+dsp:
+
+  sample_rate: 22050
+  n_fft: 1024
+  num_mels: 80
+  hop_length: 256
+  win_length: 1024
+  fmin: 0
+  fmax: 8000
+  target_dBFS: -30                      # Target loudness in decibels, used for normalization
+  peak_norm: False                      # Normalise to the peak of each wav file
+  trim_start_end_silence: True          # Whether to trim leading and trailing silence
+  trim_silence_top_db: 60               # Threshold in decibels below reference to consider silence for for trimming
+                                        # start and end silences with librosa (no trimming if really high)
+
+  trim_long_silences: False             # Whether to reduce long silence using WebRTC Voice Activity Detector
+  vad_window_length: 30                 # In milliseconds
+  vad_moving_average_width: 8
+  vad_max_silence_length: 12
+  vad_sample_rate: 16000
+
+
+preprocessing:
+
+  metafile_format: 'ljspeech'          # not to be changed, we use the simplest format for singlespeaker models
+  audio_format: '.wav'                 # extension for audio files (e.g. .wav or .flac)
+  seed: 42
+  n_val: 200
+  language: 'ru'
+  cleaner_name: 'no_cleaners'      # choices: ['english_cleaners', 'no_cleaners'], expands numbers and abbreviations.
+  use_phonemes: True                    # whether to phonemize the text
+                                        # if set to False, you have to provide the phonemized text yourself
+  min_text_len: 2
+  pitch_min_freq: 30                    # Minimum value for pitch frequency to remove outliers (Common pitch range is
+                                        # about 60-300)
+  pitch_max_freq: 600                   # Maximum value for pitch frequency to remove outliers (Common pitch range is
+                                        # about 60-300)¡
+  pitch_extractor: pyworld              # choice of pitch extraction library, choices: [librosa, pyworld]
+  pitch_frame_length: 2048              # Frame length for extracting pitch with librosa
+
+
+duration_extraction:
+
+  silence_threshold: -11             # normalized mel value below which the voice is considered silent
+                                     # minimum mel value = -11.512925465 for zeros in the wav array (=log(1e-5),
+                                     # where 1e-5 is a cutoff value)
+  silence_prob_shift: 0.25           # increase probability for silent characters in periods of silence
+                                     # for better durations during non voiced periods
+  max_batch_size: 32                 # max allowed for binned dataloader used for tacotron inference
+  num_workers: 12                    # number of processes for costly dijkstra duration extraction
+
+
+tacotron:
+
+  model:
+    embed_dims: 256
+    encoder_dims: 128
+    decoder_dims: 256
+    postnet_dims: 128
+    speaker_emb_dim: 0               # dimension of speaker embedding,
+                                     # set to 0 for no speaker conditioning, to 256 for speaker conditioning
+    encoder_k: 16
+    lstm_dims: 512
+    postnet_k: 8
+    num_highways: 4
+    dropout: 0.5
+    stop_threshold: -11             # Value below which audio generation ends.
+
+    aligner_hidden_dims: 256        # text-mel aligner hidden dimensions
+    aligner_out_dims: 32            # text-mel aligner encoding dimensions for text and mel
+
+  training:
+    schedule:
+      - 5,  1e-3,  10_000,  32      # progressive training schedule
+      - 3,   1e-4,  20_000,  16     # (r, lr, step, batch_size)
+      - 2,   1e-4,  30_000,  8
+      - 1,   1e-4,  40_000,  8
+
+    dia_loss_matrix_g: 0.2                # value of g for diatonal matrix (larger g = broader diagonal)
+    dia_loss_factor: 1.0             # factor for scaling diagonal loss
+    ctc_loss_factor: 0.1             # factor for scaling aligner CTC loss
+    clip_grad_norm: 1.0              # clips the gradient norm to prevent explosion - set to None if not needed
+    checkpoint_every: 10000          # checkpoints the model every x steps
+    plot_every: 1000                 # generates samples and plots every x steps
+    num_workers: 2                   # number of workers for dataloader
+
+    filter:
+      max_mel_len: 1250                    # filter files with mel len larger than given
+      filter_duration_stats: False        # whether to filter according to the duration stats below
+      min_attention_sharpness: 0.5         # filter files with bad attention sharpness score, if 0 then no filter
+      min_attention_alignment: 0.95        # filter files with bad attention alignment score, if 0 then no filter
+      max_duration: 40                     # filter files with durations larger than given
+      max_consecutive_ones: 6              # filter files where durations contain more consecutive ones than given
+
+
+forward_tacotron:
+
+  model:
+    embed_dims: 256                 # embedding dimension for main model
+    series_embed_dims: 64           # embedding dimension for series predictor
+
+    durpred_conv_dims: 256
+    durpred_rnn_dims: 64
+    durpred_dropout: 0.5
+
+    pitch_conv_dims: 256
+    pitch_rnn_dims: 128
+    pitch_dropout: 0.5
+    pitch_strength: 1.              # set to 0 if you want no pitch conditioning
+
+    energy_conv_dims: 256
+    energy_rnn_dims: 64
+    energy_dropout: 0.5
+    energy_strength: 1.             # set to 0 if you want no energy conditioning
+
+    prenet_dims: 256
+    prenet_k: 16
+    prenet_dropout: 0.5
+    prenet_num_highways: 4
+
+    rnn_dims: 512
+
+    postnet_dims: 256
+    postnet_k: 8
+    postnet_num_highways: 4
+    postnet_dropout: 0.
+
+  training:
+    schedule:
+      - 5e-5,  150_000,  32       # progressive training schedule
+      - 1e-5,  300_000,  32       # lr, step, batch_size
+    dur_loss_factor: 0.1
+    pitch_loss_factor: 0.1
+    energy_loss_factor: 0.1
+    pitch_zoneout: 0.             # zoneout may regularize conditioning on pitch
+    energy_zoneout: 0.            # zoneout may regularize conditioning on energy
+
+    clip_grad_norm: 1.0           # clips the gradient norm to prevent explosion - set to None if not needed
+    checkpoint_every: 10_000      # checkpoints the model every x steps
+    plot_every: 1000              # generates samples and plots every x steps
+
+    filter:
+      max_mel_len: 1250                    # filter files with mel len larger than given
+      filter_duration_stats: True          # whether to filter according to the duration stats below
+      min_attention_sharpness: 0.5         # filter files with bad attention sharpness score, if 0 then no filter
+      min_attention_alignment: 0.95        # filter files with bad attention alignment score, if 0 then no filter
+      max_duration: 40                     # filter files with durations larger than given
+      max_consecutive_ones: 6              # filter files where durations contain more consecutive ones than given
+
+fast_pitch:
+
+  model:
+    durpred_d_model: 128
+    durpred_n_heads: 2
+    durpred_layers: 4
+    durpred_d_fft: 128
+    durpred_dropout: 0.5
+
+    pitch_d_model: 128
+    pitch_n_heads: 2
+    pitch_layers: 4
+    pitch_d_fft: 128
+    pitch_dropout: 0.5
+    pitch_strength: 1.0
+
+    energy_d_model: 128
+    energy_n_heads: 2
+    energy_layers: 4
+    energy_d_fft: 128
+    energy_dropout: 0.5
+    energy_strength: 1.0
+
+    d_model: 256
+    conv1_kernel: 9
+    conv2_kernel: 1
+
+    prenet_layers: 4
+    prenet_heads: 2
+    prenet_fft: 1024
+    prenet_dropout: 0.1
+
+    postnet_layers: 4
+    postnet_heads: 2
+    postnet_fft: 1024
+    postnet_dropout: 0.1
+
+
+  training:
+    schedule:
+      - 1e-5,  5_000,  32         # progressive training schedule
+      - 5e-5,  100_000,  32       # lr, step, batch_size
+      - 2e-5,  300_000,  32
+    dur_loss_factor: 0.1
+    pitch_loss_factor: 0.1
+    energy_loss_factor: 0.1
+    pitch_zoneout: 0.             # zoneout may regularize conditioning on pitch
+    energy_zoneout: 0.            # zoneout may regularize conditioning on energy
+
+    max_mel_len: 1250
+    clip_grad_norm: 1.0           # clips the gradient norm to prevent explosion - set to None if not needed
+    checkpoint_every: 10_000      # checkpoints the model every x steps
+    plot_every: 1000
+
+    filter:
+      max_mel_len: 1250                    # filter files with mel len larger than given
+      filter_duration_stats: True          # whether to filter according to the duration stats below
+      min_attention_sharpness: 0.5         # filter files with bad attention sharpness score, if 0 then no filter
+      min_attention_alignment: 0.95        # filter files with bad attention alignment score, if 0 then no filter
+      max_duration: 40                     # filter files with durations larger than given
+      max_consecutive_ones: 6              # filter files where durations contain more consecutive ones than given
