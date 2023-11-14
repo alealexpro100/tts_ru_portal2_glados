@@ -4,6 +4,17 @@ from html.parser import HTMLParser
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 
+def check_it(replica: str, link: str):
+    if 'potatos' in link:
+        return False
+    if '[' in replica or ']' in replica:
+        return False
+    if 'НЕТ!' in replica or 'А-а!' in replica:
+        return  False
+    if 'GLaDOS_sp_catapult_fling_sphere_peek_failuretwo02_ru' in link:
+        return False
+    return True
+
 if __name__ == '__main__':
     # First, get HTML for parsing
     res = requests.get("https://theportalwiki.com/wiki/GLaDOS_voice_lines/ru#Portal_2")
@@ -33,7 +44,7 @@ if __name__ == '__main__':
         def handle_endtag(self, tag):
             if tag == "a" and self.start_tag:
                 self.start_tag=False
-                if self.replica not in replicas and (not 'potatos' in self.link):
+                if self.replica not in replicas and check_it(self.replica, self.link):
                     replicas.append(self.replica)
                     urls.append(self.link)
                 self.replica=""
@@ -44,7 +55,7 @@ if __name__ == '__main__':
     parser = MyHTMLParser()
     parser.feed(res.text)
 
-    dest_folder='wavs'
+    dest_folder='wav'
     csv_file=""
     files = []
     def download_it(i):
