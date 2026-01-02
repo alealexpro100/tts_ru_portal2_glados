@@ -7,3 +7,4 @@
 /config.json
 /ru_irina_medium_epoch=4139-step=929464.ckpt
 /checkpoint
+/lightning_logs

@@ -25,4 +25,4 @@ Steps:
 ### Train
 
 Read instruction in original repo. Included in this repo script `train.sh` should work.
-Do not forget about `tensorboard` for metrics: `tensorboard --logdir cache/lightning_logs`.
+Do not forget about `tensorboard` for metrics: `tensorboard --logdir lightning_logs`.

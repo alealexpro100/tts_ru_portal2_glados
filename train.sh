@@ -8,9 +8,11 @@ if ! [[ -d wav || -f metadata.csv ]]; then
 fi
 
 cpkt_url="https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ru/ru_RU/irina/medium/epoch%3D4139-step%3D929464.ckpt"
-ckpt_path="ru_irina_medium_epoch=4139-step=929464.ckpt"
+ckpt_name="ru_irina_medium_epoch=4139-step=929464.ckpt"
+ckpt_path="checkpoint/ru_irina_medium_epoch=4139-step=929464.ckpt"
 
 if ! [[ -f $ckpt_path ]]; then
+  mkdir -p checkpoint || :
   wget -O $ckpt_path $cpkt_url
 fi
 
@@ -21,6 +23,7 @@ python3 -m piper.train fit \
   --data.csv_path metadata.csv \
   --data.audio_dir wav \
   --data.batch_size 16 \
+  --data.num_workers 7 \
   --model.sample_rate 22050 \
   --data.espeak_voice "ru" \
   --data.cache_dir cache \
@@ -28,4 +31,4 @@ python3 -m piper.train fit \
   --data.batch_size 16 \
   --trainer.accelerator "gpu" \
   --trainer.max_epochs 1000 \
-  --ckpt_path ./$ckpt_path  # optional but highly recommended
+  --ckpt_path $ckpt_name
