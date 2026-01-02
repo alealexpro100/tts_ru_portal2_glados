@@ -1,0 +1,32 @@
+From 2e41698925a53d0a989d4d95c970d03fbdd329e3 Mon Sep 17 00:00:00 2001
+From: Martin Weinelt <hexa@darmstadt.ccc.de>
+Date: Thu, 24 Jul 2025 16:42:39 +0200
+Subject: [PATCH 2/2] Update build requirements
+
+- Git is needed when fetching espeak-ng from git
+- python3-dev is linked against
+- python3-venv is required to create the virtualenv as instructed
+
+FROM https://github.com/OHF-Voice/piper1-gpl/pull/17
+---
+ docs/BUILDING.md | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/docs/BUILDING.md b/docs/BUILDING.md
+index b3193ae..dbadebf 100644
+--- a/docs/BUILDING.md
++++ b/docs/BUILDING.md
+@@ -6,7 +6,10 @@ You will need the following system packages installed (`apt-get`):
+ 
+ * `build-essential`
+ * `cmake`
++* `git`
+ * `ninja-build`
++* `python3-dev`
++* `python3-venv`
+ 
+ To create a dev environment:
+ 
+-- 
+2.39.5
+

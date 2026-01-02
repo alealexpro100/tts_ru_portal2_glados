@@ -1,0 +1,243 @@
+From 1d62576c438a198ec8a740074c8c2ad8abbaebd1 Mon Sep 17 00:00:00 2001
+From: lionel-rowe <lionel.rowe@gmail.com>
+Date: Wed, 26 Nov 2025 19:40:58 +0800
+Subject: [PATCH 2/2] Propagate changes to libpiper
+
+FROM https://github.com/OHF-Voice/piper1-gpl/pull/129
+---
+ libpiper/include/piper_impl.hpp |  9 ++++++
+ libpiper/src/piper.cpp          | 41 ++++++++++++++++-----------
+ pyproject.toml                  |  3 ++
+ src/piper/espeakbridge.c        | 50 ++++++++++++++++-----------------
+ tests/test_espeakbridge.py      | 25 ++++++-----------
+ 5 files changed, 69 insertions(+), 59 deletions(-)
+
+diff --git a/libpiper/include/piper_impl.hpp b/libpiper/include/piper_impl.hpp
+index aa12a1d..e6589f6 100644
+--- a/libpiper/include/piper_impl.hpp
++++ b/libpiper/include/piper_impl.hpp
+@@ -45,6 +45,10 @@ Ort::Env ort_env{ORT_LOGGING_LEVEL_WARNING, "piper"};
+ 
+ #define CLAUSE_TYPE_CLAUSE 0x00040000
+ #define CLAUSE_TYPE_SENTENCE 0x00080000
++#define CLAUSE_TYPE_EOF 0x00010000
++
++#define CLAUSE_INTONATION_TYPE 0x00007000
++#define CLAUSE_PAUSE 0x00000FFF
+ 
+ #define CLAUSE_PERIOD (40 | CLAUSE_INTONATION_FULL_STOP | CLAUSE_TYPE_SENTENCE)
+ #define CLAUSE_COMMA (20 | CLAUSE_INTONATION_COMMA | CLAUSE_TYPE_CLAUSE)
+@@ -54,6 +58,11 @@ Ort::Env ort_env{ORT_LOGGING_LEVEL_WARNING, "piper"};
+ #define CLAUSE_COLON (30 | CLAUSE_INTONATION_FULL_STOP | CLAUSE_TYPE_CLAUSE)
+ #define CLAUSE_SEMICOLON (30 | CLAUSE_INTONATION_COMMA | CLAUSE_TYPE_CLAUSE)
+ 
++#define EXCLAMATION_PAUSE (CLAUSE_EXCLAMATION & CLAUSE_PAUSE)
++#define PERIOD_PAUSE (CLAUSE_PERIOD & CLAUSE_PAUSE)
++#define SEMICOLON_PAUSE (CLAUSE_SEMICOLON & CLAUSE_PAUSE)
++#define COMMA_PAUSE (CLAUSE_COMMA & CLAUSE_PAUSE)
++
+ struct piper_synthesizer {
+     // From config JSON file
+     std::string espeak_voice;
+diff --git a/libpiper/src/piper.cpp b/libpiper/src/piper.cpp
+index 774e87d..887766c 100644
+--- a/libpiper/src/piper.cpp
++++ b/libpiper/src/piper.cpp
+@@ -129,6 +129,29 @@ piper_default_synthesize_options(piper_synthesizer *synth) {
+     return options;
+ }
+ 
++std::string categorize_terminator(int terminator) {
++    if ((terminator & CLAUSE_TYPE_EOF) != CLAUSE_TYPE_EOF) {
++        int pause = terminator & CLAUSE_PAUSE;
++
++        if (pause >= PERIOD_PAUSE) {
++            switch (terminator & CLAUSE_INTONATION_TYPE) {
++                case CLAUSE_INTONATION_EXCLAMATION: return "!";
++                case CLAUSE_INTONATION_QUESTION: return "?";
++                default: return ".";
++            }
++        } else if (pause >= SEMICOLON_PAUSE) {
++            switch (terminator & CLAUSE_INTONATION_TYPE) {
++                case CLAUSE_INTONATION_FULL_STOP: return ":";
++                default: return ";";
++            }
++        } else if (pause >= COMMA_PAUSE) {
++            return ",";
++        }
++    }
++
++    return "";
++}
++
+ int piper_synthesize_start(struct piper_synthesizer *synth, const char *text,
+                            const piper_synthesize_options *options) {
+     if (!synth) {
+@@ -163,7 +186,6 @@ int piper_synthesize_start(struct piper_synthesizer *synth, const char *text,
+     const void *text_ptr = text;
+     while (text_ptr != nullptr) {
+         int terminator = 0;
+-        std::string terminator_str = "";
+ 
+         const char *phonemes = espeak_TextToPhonemesWithTerminator(
+             &text_ptr, espeakCHARS_AUTO, espeakPHONEMES_IPA, &terminator);
+@@ -172,22 +194,7 @@ int piper_synthesize_start(struct piper_synthesizer *synth, const char *text,
+             sentence_phonemes[current_idx] += phonemes;
+         }
+ 
+-        // Categorize terminator
+-        terminator &= 0x000FFFFF;
+-
+-        if (terminator == CLAUSE_PERIOD) {
+-            terminator_str = ".";
+-        } else if (terminator == CLAUSE_QUESTION) {
+-            terminator_str = "?";
+-        } else if (terminator == CLAUSE_EXCLAMATION) {
+-            terminator_str = "!";
+-        } else if (terminator == CLAUSE_COMMA) {
+-            terminator_str = ", ";
+-        } else if (terminator == CLAUSE_COLON) {
+-            terminator_str = ": ";
+-        } else if (terminator == CLAUSE_SEMICOLON) {
+-            terminator_str = "; ";
+-        }
++        std::string terminator_str = categorize_terminator(terminator);
+ 
+         sentence_phonemes[current_idx] += terminator_str;
+ 
+diff --git a/pyproject.toml b/pyproject.toml
+index f7ceff1..4d0be3f 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -8,3 +8,6 @@ exclude = '''
+     \.pyi$
+ )
+ '''
++
++[tool.pytest.ini_options]
++disable_test_id_escaping_and_forfeit_all_rights_to_community_support = true
+diff --git a/src/piper/espeakbridge.c b/src/piper/espeakbridge.c
+index e5818b1..c541d42 100644
+--- a/src/piper/espeakbridge.c
++++ b/src/piper/espeakbridge.c
+@@ -57,6 +57,29 @@ static PyObject *py_set_voice(PyObject *self, PyObject *args) {
+     Py_RETURN_NONE;
+ }
+ 
++static char *categorize_terminator(int terminator) {
++    if ((terminator & CLAUSE_TYPE_EOF) != CLAUSE_TYPE_EOF) {
++        int pause = terminator & CLAUSE_PAUSE;
++
++        if (pause >= PERIOD_PAUSE) {
++            switch (terminator & CLAUSE_INTONATION_TYPE) {
++                case CLAUSE_INTONATION_EXCLAMATION: return "!";
++                case CLAUSE_INTONATION_QUESTION: return "?";
++                default: return ".";
++            }
++        } else if (pause >= SEMICOLON_PAUSE) {
++            switch (terminator & CLAUSE_INTONATION_TYPE) {
++                case CLAUSE_INTONATION_FULL_STOP: return ":";
++                default: return ";";
++            }
++        } else if (pause >= COMMA_PAUSE) {
++            return ",";
++        }
++    }
++
++    return "";
++}
++
+ static PyObject *py_get_phonemes(PyObject *self, PyObject *args) {
+     const char *text;
+     if (!PyArg_ParseTuple(args, "s", &text)) {
+@@ -67,42 +90,19 @@ static PyObject *py_get_phonemes(PyObject *self, PyObject *args) {
+ 
+     while (text != NULL) {
+         int terminator = 0;
+-        char *terminator_str = "";
+ 
+         const char *phonemes = espeak_TextToPhonemesWithTerminator(
+             (const void **)&text, espeakCHARS_AUTO, espeakPHONEMES_IPA,
+             &terminator);
+ 
+-        if (!(terminator & CLAUSE_TYPE_EOF)) {
+-            int pause = terminator & CLAUSE_PAUSE;
+-            int intonation = terminator & CLAUSE_INTONATION_TYPE;
+-
+-            if (pause >= PERIOD_PAUSE) {
+-                if (intonation == CLAUSE_INTONATION_EXCLAMATION) {
+-                    terminator_str = "!";
+-                } else if (intonation == CLAUSE_INTONATION_QUESTION) {
+-                    terminator_str = "?";
+-                } else {
+-                    terminator_str = ".";
+-                }
+-            } else if (pause >= SEMICOLON_PAUSE) {
+-                if (intonation == CLAUSE_INTONATION_FULL_STOP) {
+-                    terminator_str = ":";
+-                } else {
+-                    terminator_str = ";";
+-                }
+-            } else if (pause >= COMMA_PAUSE) {
+-                terminator_str = ",";
+-            }
+-        }
++        char *terminator_str = categorize_terminator(terminator);
+ 
+         PyList_Append(phonemes_and_terminators,
+                       Py_BuildValue("(ssO)", phonemes, terminator_str,
+                                     (terminator & CLAUSE_TYPE_SENTENCE) ==
+                                             CLAUSE_TYPE_SENTENCE
+                                         ? Py_True
+-                                        : Py_False
+-                                ));
++                                        : Py_False));
+     }
+ 
+     return phonemes_and_terminators;
+diff --git a/tests/test_espeakbridge.py b/tests/test_espeakbridge.py
+index 738cdac..d28513d 100644
+--- a/tests/test_espeakbridge.py
++++ b/tests/test_espeakbridge.py
+@@ -4,30 +4,21 @@ from piper import espeakbridge
+ 
+ terminator_tests = [
+     # exact matches for punctuation are retained verbatim
+-    (
+-        "en-us",
+-        "Hello, world! Colons: important? Maybe; maybe not.",
+-        [",", "!", ":", "?", ";", "."],
+-    ),
++    ("en-us", "Hello, world! Colons: important? Maybe; maybe not.", ",!:?;."),
+     # ellipses get normalized to semicolons
+-    ("en-us", "An ellipsis… Could it be true?", [";", "?"]),
+-    ("en-us", "An ASCII ellipsis... Could it be true?", [";", "?"]),
+-    ("en-us", "A long ellipsis.... Could it be true?", [";", "?"]),
++    ("en-us", "An ellipsis… Could it be true?", ";?"),
++    ("en-us", "An ASCII ellipsis... Could it be true?", ";?"),
++    ("en-us", "A long ellipsis.... Could it be true?", ";?"),
+     # em dashes get normalized to semicolons
+-    ("en-us", "Em dashes — for all your punctuation needs.", [";", "."]),
+-    # various Chinese punctuation gets normalized to ASCII equivalents
+-    (
+-        "cmn",
+-        "你好，世界！省略号……一、二，三。问号？",
+-        [",", "!", ";", ",", ",", ".", "?"],
+-    ),
++    ("en-us", "Em dashes — for all your punctuation needs.", ";."),
++    # Chinese/fullwidth punctuation gets normalized to ASCII equivalents
++    ("cmn", "你好，世界！冒号：重要？可能；与否。一、二、三……", ",!:?;.,,;"),
+ ]
+ 
+ 
+ @pytest.mark.parametrize("locale,text,expect", terminator_tests)
+ def test_get_phonemes_terminator(locale: str, text: str, expect: list[str]):
+     espeakbridge.set_voice(locale)
+-
+     result = espeakbridge.get_phonemes(text)
+ 
+-    assert [result[i][1] for i in range(len(result)) if result[i][1]] == expect
++    assert [terminator for _, terminator, *_ in result] == list(expect)
+-- 
+2.39.5
+

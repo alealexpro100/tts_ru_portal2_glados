@@ -1,0 +1,134 @@
+From 68930fc4ed856742fd2974c24bbe0920e938a16d Mon Sep 17 00:00:00 2001
+From: lionel-rowe <lionel.rowe@gmail.com>
+Date: Tue, 25 Nov 2025 22:14:33 +0800
+Subject: [PATCH 1/2] Preserve pause-generating punctuation in espeakbridge
+
+FROM https://github.com/OHF-Voice/piper1-gpl/pull/129
+---
+ src/piper/espeakbridge.c   | 48 +++++++++++++++++++++++++-------------
+ tests/test_espeakbridge.py | 33 ++++++++++++++++++++++++++
+ 2 files changed, 65 insertions(+), 16 deletions(-)
+ create mode 100644 tests/test_espeakbridge.py
+
+diff --git a/src/piper/espeakbridge.c b/src/piper/espeakbridge.c
+index 0da0254..e5818b1 100644
+--- a/src/piper/espeakbridge.c
++++ b/src/piper/espeakbridge.c
+@@ -11,6 +11,10 @@
+ 
+ #define CLAUSE_TYPE_CLAUSE 0x00040000
+ #define CLAUSE_TYPE_SENTENCE 0x00080000
++#define CLAUSE_TYPE_EOF 0x00010000
++
++#define CLAUSE_INTONATION_TYPE 0x00007000
++#define CLAUSE_PAUSE 0x00000FFF
+ 
+ #define CLAUSE_PERIOD (40 | CLAUSE_INTONATION_FULL_STOP | CLAUSE_TYPE_SENTENCE)
+ #define CLAUSE_COMMA (20 | CLAUSE_INTONATION_COMMA | CLAUSE_TYPE_CLAUSE)
+@@ -20,6 +24,11 @@
+ #define CLAUSE_COLON (30 | CLAUSE_INTONATION_FULL_STOP | CLAUSE_TYPE_CLAUSE)
+ #define CLAUSE_SEMICOLON (30 | CLAUSE_INTONATION_COMMA | CLAUSE_TYPE_CLAUSE)
+ 
++#define EXCLAMATION_PAUSE (CLAUSE_EXCLAMATION & CLAUSE_PAUSE)
++#define PERIOD_PAUSE (CLAUSE_PERIOD & CLAUSE_PAUSE)
++#define SEMICOLON_PAUSE (CLAUSE_SEMICOLON & CLAUSE_PAUSE)
++#define COMMA_PAUSE (CLAUSE_COMMA & CLAUSE_PAUSE)
++
+ static PyObject *py_initialize(PyObject *self, PyObject *args) {
+     const char *data_dir;
+     if (!PyArg_ParseTuple(args, "s", &data_dir)) {
+@@ -64,21 +73,27 @@ static PyObject *py_get_phonemes(PyObject *self, PyObject *args) {
+             (const void **)&text, espeakCHARS_AUTO, espeakPHONEMES_IPA,
+             &terminator);
+ 
+-        // Categorize terminator
+-        terminator &= 0x000FFFFF;
+-
+-        if (terminator == CLAUSE_PERIOD) {
+-            terminator_str = ".";
+-        } else if (terminator == CLAUSE_QUESTION) {
+-            terminator_str = "?";
+-        } else if (terminator == CLAUSE_EXCLAMATION) {
+-            terminator_str = "!";
+-        } else if (terminator == CLAUSE_COMMA) {
+-            terminator_str = ",";
+-        } else if (terminator == CLAUSE_COLON) {
+-            terminator_str = ":";
+-        } else if (terminator == CLAUSE_SEMICOLON) {
+-            terminator_str = ";";
++        if (!(terminator & CLAUSE_TYPE_EOF)) {
++            int pause = terminator & CLAUSE_PAUSE;
++            int intonation = terminator & CLAUSE_INTONATION_TYPE;
++
++            if (pause >= PERIOD_PAUSE) {
++                if (intonation == CLAUSE_INTONATION_EXCLAMATION) {
++                    terminator_str = "!";
++                } else if (intonation == CLAUSE_INTONATION_QUESTION) {
++                    terminator_str = "?";
++                } else {
++                    terminator_str = ".";
++                }
++            } else if (pause >= SEMICOLON_PAUSE) {
++                if (intonation == CLAUSE_INTONATION_FULL_STOP) {
++                    terminator_str = ":";
++                } else {
++                    terminator_str = ";";
++                }
++            } else if (pause >= COMMA_PAUSE) {
++                terminator_str = ",";
++            }
+         }
+ 
+         PyList_Append(phonemes_and_terminators,
+@@ -86,7 +101,8 @@ static PyObject *py_get_phonemes(PyObject *self, PyObject *args) {
+                                     (terminator & CLAUSE_TYPE_SENTENCE) ==
+                                             CLAUSE_TYPE_SENTENCE
+                                         ? Py_True
+-                                        : Py_False));
++                                        : Py_False
++                                ));
+     }
+ 
+     return phonemes_and_terminators;
+diff --git a/tests/test_espeakbridge.py b/tests/test_espeakbridge.py
+new file mode 100644
+index 0000000..738cdac
+--- /dev/null
++++ b/tests/test_espeakbridge.py
+@@ -0,0 +1,33 @@
++import pytest
++
++from piper import espeakbridge
++
++terminator_tests = [
++    # exact matches for punctuation are retained verbatim
++    (
++        "en-us",
++        "Hello, world! Colons: important? Maybe; maybe not.",
++        [",", "!", ":", "?", ";", "."],
++    ),
++    # ellipses get normalized to semicolons
++    ("en-us", "An ellipsis… Could it be true?", [";", "?"]),
++    ("en-us", "An ASCII ellipsis... Could it be true?", [";", "?"]),
++    ("en-us", "A long ellipsis.... Could it be true?", [";", "?"]),
++    # em dashes get normalized to semicolons
++    ("en-us", "Em dashes — for all your punctuation needs.", [";", "."]),
++    # various Chinese punctuation gets normalized to ASCII equivalents
++    (
++        "cmn",
++        "你好，世界！省略号……一、二，三。问号？",
++        [",", "!", ";", ",", ",", ".", "?"],
++    ),
++]
++
++
++@pytest.mark.parametrize("locale,text,expect", terminator_tests)
++def test_get_phonemes_terminator(locale: str, text: str, expect: list[str]):
++    espeakbridge.set_voice(locale)
++
++    result = espeakbridge.get_phonemes(text)
++
++    assert [result[i][1] for i in range(len(result)) if result[i][1]] == expect
+-- 
+2.39.5
+

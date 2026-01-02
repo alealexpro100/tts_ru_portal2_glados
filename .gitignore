@@ -1,4 +1,9 @@
 /wav
 /metadata.csv
-/espeak-ng
-/espeak_*debian.tar.xz
+/deb
+/espeak-ng_*debian.tar.xz
+/piper1-gpl
+/cache
+/config.json
+/ru_irina_medium_epoch=4139-step=929464.ckpt
+/checkpoint

@@ -1,0 +1,67 @@
+From 5b89c6d418e49a54f7a1bea0f8c722dbd992e899 Mon Sep 17 00:00:00 2001
+From: black-born <chretienjeremy98@gmail.com>
+Date: Wed, 17 Dec 2025 15:43:24 +0100
+Subject: [PATCH 3/3] update the new ckpt path for the rest of the code
+
+FROM https://github.com/black-born/piper1-gpl
+---
+ src/piper/train/__main__.py | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/src/piper/train/__main__.py b/src/piper/train/__main__.py
+index 9be0b2c..4394c60 100644
+--- a/src/piper/train/__main__.py
++++ b/src/piper/train/__main__.py
+@@ -29,7 +29,8 @@ class VitsLightningCLI(LightningCLI):
+         if not self.config.get("subcommand"):
+             return
+         ckpt_path = self.config[self.config.subcommand].get("ckpt_path")
+-        self.process_checkpoint(ckpt_path)
++        ckpt_path = self.process_checkpoint(ckpt_path, "checkpoint/")
++        self.config[self.config.subcommand]["ckpt_path"] = ckpt_path
+         if ckpt_path and Path(ckpt_path).is_file():
+             ckpt = torch.load(ckpt_path, weights_only=True, map_location="cpu")
+             hparams = ckpt.get("hyper_parameters", {})
+@@ -58,7 +59,7 @@ class VitsLightningCLI(LightningCLI):
+             return type(obj)(self.convert_paths(item) for item in obj)
+         return obj
+ 
+-    def strip_checkpoint_params(checkpoint):
++    def strip_checkpoint_params(self, checkpoint):
+         """Remove conflicting hyperparameters from checkpoint"""
+         if 'hyper_parameters' not in checkpoint:
+             _LOGGER.info("\n⚠ No 'hyper_parameters' key found in checkpoint")
+@@ -96,7 +97,7 @@ class VitsLightningCLI(LightningCLI):
+         for key, value in checkpoint['hyper_parameters'].items():
+             _LOGGER.info(f"  {key}: {value}")
+         
+-        return checkpoint
++        return checkpoint, removed == []
+ 
+     def process_checkpoint(self, input_checkpoint, output_folder):
+         """Main processing function with file/folder pickers"""
+@@ -110,6 +111,8 @@ class VitsLightningCLI(LightningCLI):
+             _LOGGER.info("No output folder selected. Exiting.")
+             return
+         
++        os.makedirs(output_folder, exist_ok=True)
++        
+         # Generate output filename
+         input_filename = os.path.basename(input_checkpoint)
+         output_filename = f"processed-{input_filename}"
+@@ -126,9 +129,10 @@ class VitsLightningCLI(LightningCLI):
+             
+             torch.save(checkpoint, temp_checkpoint)
+             
+-            checkpoint = self.strip_checkpoint_params(checkpoint)
++            checkpoint, is_changed = self.strip_checkpoint_params(checkpoint)
+             
+-            torch.save(checkpoint, output_checkpoint)
++            if is_changed:
++                torch.save(checkpoint, output_checkpoint)
+             
+             # Clean up temporary file
+             if os.path.exists(temp_checkpoint):
+-- 
+2.39.5
+
