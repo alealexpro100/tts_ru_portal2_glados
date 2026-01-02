@@ -8,15 +8,21 @@ repo_url="https://github.com/espeak-ng/espeak-ng.git"
 repo_name="${repo_url##*/}"
 repo_name="${repo_name%.git}"
 
-wget $deb_archive_url -O $deb_archive_name
-git clone $repo_url
-tar -xf $deb_archive_name -C $repo_name
+[[ -f $deb_archive_name ]] || wget $deb_archive_url -O $deb_archive_name
+if [[ -d deb/$repo_name ]]; then
+    (   
+        cd $repo_name
+        git pull
+    )
+else
+    git clone $repo_url deb/$repo_name
+fi
+tar -xf $deb_archive_name -C deb/$repo_name
 
-cd $repo_name
+cd deb/$repo_name
 
-for patch in ../espeak_patches/*.patch; do
-    echo "Applying patch: $patch"
-    git am < "$patch"
+for patch in ../../espeak_patches/*.patch; do
+    patch -p1 < "$patch"
 done
 
 sudo apt-get build-dep -yq .
