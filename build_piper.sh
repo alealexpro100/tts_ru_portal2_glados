@@ -25,8 +25,9 @@ done
 source .venv/bin/activate
 pip install --upgrade pip
 if command -v nvidia-smi &> /dev/null; then
-    pip3 install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+    pip3 install torch==2.8.0 torchvision --index-url https://download.pytorch.org/whl/cu126
 fi
+pip3 install --upgrade onnx onnxscript
 python3 -m pip install -e .[train]
 
 ./build_monotonic_align.sh
