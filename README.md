@@ -19,10 +19,14 @@ Tested on debian bookworm with CUDA card (P104-100).
 Steps:
 1. Install deps: `sudo apt-get install build-essential python3 python3-dev python3-venv cmake`
 2. Build espeak with patches: `./build_espeak.sh` (will ask for `sudo` password).
-3. Install espeak pkgs: `(cd deb; apt-get install ./*.deb)`.
+3. Install espeak pkgs: `sudo apt-get install ./deb/*.deb`.
 4. Build piper: `./build_piper.sh`.
 
 ### Train
 
 Read instruction in original repo. Included in this repo script `train.sh` should work.
 Do not forget about `tensorboard` for metrics: `tensorboard --logdir lightning_logs`.
+
+## Notes
+
+Rules for espeak [here](https://github.com/mitrokun/espeak-ng-data/blob/main/ru_rules) looks good, so it is used for training voice too.

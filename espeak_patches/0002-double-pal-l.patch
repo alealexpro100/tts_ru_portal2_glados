@@ -1,0 +1,137 @@
+From 4bf0ced7c4e1acfd39b3e729bd09754beb717935 Mon Sep 17 00:00:00 2001
+From: mitrokun <108380896+mitrokun@users.noreply.github.com>
+Date: Thu, 26 Jun 2025 21:34:06 +0000
+Subject: [PATCH] double pal l
+
+FROM https://github.com/espeak-ng/espeak-ng/pull/2234
+---
+ dictsource/ru_rules               | 39 +++++++++++++++++++++++--------
+ tests/dictionary.test             |  2 +-
+ tests/language-phonemes.test      |  4 ++--
+ tests/language-pronunciation.test |  2 +-
+ tests/translate.test              |  4 ++--
+ 5 files changed, 35 insertions(+), 16 deletions(-)
+
+diff --git a/dictsource/ru_rules b/dictsource/ru_rules
+index 1bd0f597..8dd3bad2 100644
+--- a/dictsource/ru_rules
++++ b/dictsource/ru_rules
+@@ -249,12 +249,29 @@
+         к (зY   g
+ 
+ .group л
+-        л        l
+-?2      л (Y    l;
+-        л (Y    l;
+-?3        л (Y    l^
+-              _дисп) ле                lE
+-                 п) ле (ер                  lE
++        л       L
++        _) ла	La
++        _) ло 	Lo
++        _) лу 	Lu
++        _)лэ 	        LE
++        _)лы 	Ly
++        C) ла	La
++        C) ло 	Lo
++        C) лу 	Lu
++        C) лэ 	LE
++        @) ла	LV
++        @) ло 	Lo
++        @) лу 	Lu
++        @) лы 	Ly
++        @) лэ 	LE
++        л (Y+	 	l;
++        л (лY+		l;
++        @) л (C	 	L
++        ла(_	    La
++        лю	    l;u
++        л(_	    L
++        _дисп) ле	lE
++        п) ле (ер	lE 
+ 
+ .group м
+         м       m
+@@ -309,7 +326,7 @@
+         р       r
+         р (B    r;
+         р (Y    r;
+-        р (ь    RI^
++        р (ь    r;
+ 
+ .group с
+         с       s
+@@ -494,9 +511,11 @@
+         ы       y
+ 
+ .group ь
+-        ь (Y    j
+-?2      ь (Y    _|
+-
++        ь        ;       // мягкий знак заменяется на пустую фонему, палатализация через согласные
++        ья       ja
++        ье       je
++        ью       ju
++        ьё       '8
+ .group э
+         э       E2
+      _) э       E#
+diff --git a/tests/dictionary.test b/tests/dictionary.test
+index b255bd4a..51015b8a 100755
+--- a/tests/dictionary.test
++++ b/tests/dictionary.test
+@@ -31,7 +31,7 @@ test_phon it "s,Ents2a v,U'Esse s'Entsa" "senza vs senza" "\$atend"
+ test_phon en "m'eIlstr0m m'eIlstr0m" "mælstrom maelstrom" ".replace"
+ # rest of the numbers are tested in other test files
+ test_phon en "z'i@roU pOInt n'aIn n'aIn" "0.99" "_dpt"
+-test_phon ru "V#d;'in_ _:'i_: n'ojl n'ojl_d;Is;'AtYx" "1,00" "_dpt2"
++test_phon ru "V#d;'in_ _:'i_: n'ojl; n'ojl;_d;Is;'AtYx" "1,00" "_dpt2"
+ test_phon en "t'u:h'VndrI2d@n tw'Enti" "220" "_0and"
+ test_phon af "(fr)avinj'O~(en) b'0st@n(af) S'ina" "avignon boston china" "_^_"
+ test_phon en "s'VtS _a#z" "such as" "(multiple  words)"
+diff --git a/tests/language-phonemes.test b/tests/language-phonemes.test
+index 70d558ad..02862449 100755
+--- a/tests/language-phonemes.test
++++ b/tests/language-phonemes.test
+@@ -125,8 +125,8 @@ test_phwav qdb  4ee6801e86937a1fb46fd337e804b5c36296c079 "ma na Na pa ta ka ba d
+ test_phwav quc 0c7199d688488c4e71bb7096cd5c9ab518d4b19d "ma na Na pa ta ka ba da ga fa Ta sa Sa xa ha va Da za Za tSa dZa la ra ja wa t2a t#a d#a z#a r-a z/2a w#a m- n- N- _:_ mI mE ma m0 mV mU mi: mA: mO: mu: m3: mA@ mO@ mo@ mU@ mi@3 mIR mVR mi@ me@ mi m@ m3 me# mI# mI2 meI maI mOI moU maU maa mO2 maI@ maI3 maU@"
+ test_phwav qya b9b73f37cc0ecb4fb1d30830847123ac53a2bf4a "ma na Na pa ta ka ba da ga fa Ta sa Sa xa ha va Da za Za tSa dZa la ra ja wa t2a t#a d#a z#a r-a z/2a w#a m- n- N- _:_ mI mE ma m0 mV mU mi: mA: mO: mu: m3: mA@ mO@ mo@ mU@ mi@3 mIR mVR mi@ me@ mi m@ m3 me# mI# mI2 meI maI mOI moU maU maa mO2 maI@ maI3 maU@"
+ test_phwav ro 1d4a597446e9c02da47af76ba08bb3b067d55c44 "ma na n^a pa ta ka ba da ga fa Ta sa Sa J^a xa Da tSa la l^a *a Ra ra v#a _:_ ma ma/ me me/ mE mi mo mo/ mu moI"
+-test_phwav ru 4fa971f03b58d68a26130f33ff0d0dfda44e7a4a "ma na pa ba ta da tSa dZa tsa dza ca Ja Ca ka ga fa va sa za Sa Za xa Qa ha la ja wa Ra *a _:_ mi me m& my mW mu mo ma m@"
+-test_phwav ru-cl 4fa971f03b58d68a26130f33ff0d0dfda44e7a4a "ma na pa ba ta da tSa dZa tsa dza ca Ja Ca ka ga fa va sa za Sa Za xa Qa ha la ja wa Ra *a _:_ mi me m& my mW mu mo ma m@"
++test_phwav ru cb1ab7c28e21530aadc54d407f645a31fec470d2 "ma na pa ba ta da tSa dZa tsa dza ca Ja Ca ka ga fa va sa za Sa Za xa Qa ha la ja wa Ra *a _:_ mi me m& my mW mu mo ma m@"
++test_phwav ru-cl cb1ab7c28e21530aadc54d407f645a31fec470d2 "ma na pa ba ta da tSa dZa tsa dza ca Ja Ca ka ga fa va sa za Sa Za xa Qa ha la ja wa Ra *a _:_ mi me m& my mW mu mo ma m@"
+ test_phwav ru-LV d9e3e425268d7ed140d1bf0e883e4dacc25d7749 "ma na pa ba ta da tSa dZa tsa dza ca Ja Ca ka ga fa va sa za Sa Za xa Qa ha la ja wa Ra *a _:_ mi me m& my mW mu mo ma m@"
+ test_phwav rup 2a8948972abcbde742ac95008cb05e807a6611ce "ma na n^a pa ta ka ba da ga fa Ta sa Sa J^a xa Da tSa la l^a *a Ra ra v#a _:_ ma me mE mi mo mu moI"
+ test_phwav sd e0ce9b04c614df8b34180478f2f87ae58baa95ba "ma na n.a n^a pa t#a t.a tSa ka qa p#a t.#a c#a k#a ba d#a d.a dZa ga b#a d.#a J#a g#a fa sa Sa xa va za Za Qa Ha ra r.a la ja _:_ mI mU me m@ mo mE mV mO ma mi: mu: me: mo: mE: mO: ma: m&: mI~ mi~ mU~ mu~ mU~ me~ mo~ mE~ mV~ mO~ ma~ mAI maU"
+diff --git a/tests/language-pronunciation.test b/tests/language-pronunciation.test
+index e29c0912..98f94f75 100755
+--- a/tests/language-pronunciation.test
++++ b/tests/language-pronunciation.test
+@@ -224,7 +224,7 @@ z'&~Ng&U~_:_: ,E*&U~ p,&l'avR&Z dU p,u*@-tug'es#" "Luís argüia à Júlia que 
+ test_phon qya ",aInul'Indal,E ald'INga aNk'alIm,a and'u:RIl at'akwE k,alak'IRja k,uIvI;'e:nEn ,EaR'EndIl El'EndIl ,ElEnt'a:RI; El'EssaR 'ENkwI;,E E'OnwE ER'EssE,a h,ElkaR'aksE w#'Esta C'aRmEn Is'IlduR l'ap:a m'axtan nam'a:RI;,E n'at:IR,a n,u:mEn'o:RE 'OROm,E Ot'OkwE pEl'Ek:O pEl'o:RI s'aUROn tan'IkwEt,Il t,Elum'ECtaR t'ulkas tuR'ambaR und'o:mI;,El ut'umnO" "Ainulindalë aldinga ancalima Andúril ataquë Calacirya Cuiviénen Eärendil Elendil Elentári Elessar enquië Eönwe Eressëa Helcaraxë hwesta Hyarmen Isildur lappa Mahtan Namárië nattira Númenórë Orome otoquë pelecco Pelóri Sauron Taniquetil Telumehtar Tulkas Turambar Undómiel Utumno" "Quenya"
+ test_phon ro "m,uzikol'og@_! yn b'eZ v'ynd wh'iski Si tekw'ila
+ p@-*'ets f'iks" "Muzicologă în bej vând whisky și tequila, preț fix." "Latn"
+-test_phon ru "Syr'okVja E#l;ikt@-r;if;ik'Atsyja 'juZnyx gub;'ern;ij d'Ast m'oS;nyj tVltS;'ok pVdj'8mu s;'elskVvV xVz;'Ajstva#" "Широкая электрификация южных губерний даст мощный толчок подъёму сельского хозяйства." "Cyrl"
++test_phon ru "Syr'okVja E#l;iktr;if;ik'Atsyja 'juZnyx gub;'ern;ij d'Ast m'oS;nyj tVLtS;'ok pVdj'8mu s;'el;skVvV xVz;'Ajstva#" "Широкая электрификация южных губерний даст мощный толчок подъёму сельского хозяйства." "Cyrl"
+ test_phon sd "s'Indhi b'o:li; 'Ind.o: jo:R'Vpi xa:nd'a:n s'a~: t[a:l'Vq R,@k#@nd'Vr. a:Rj'a:i b'o:li; ,a:he:
+ J'Vnhn t['e: ,aRb'i: bo:l'i:;a J'o: b'I t[@m'a:m v'Vd.o: as'VR ,a:he:
+ h'Ina v'aqt s'Indhi b'o:li s'Indh J'e: m'Vk# b'o:li_! 'ae~ d,@f@t['VRi z@b'a:n ,a:he:" "سنڌي ٻولي انڊو يورپي خاندان سان تعلق رکندڙ آريائي ٻولي آھي، جنھن تي عربي ٻوليءَ جو بہ تمام وڏو اثر آهي. هن وقت سنڌي ٻولي سنڌ جي مک ٻولي ۽ دفتري زبان آھي." "Arab"
+diff --git a/tests/translate.test b/tests/translate.test
+index f25c85cd..413b6db1 100755
+--- a/tests/translate.test
++++ b/tests/translate.test
+@@ -37,8 +37,8 @@ test_phon hi "ka:n'u:n" "कानून"
+ test_phon en "k'apIt@Lz" "capitals"
+ 
+ # bug: https://github.com/espeak-ng/espeak-ng/issues/824
+-test_phon ru "(en)s'i:(ru) n'ojl t'otS;ka# v'os;I3md;E2s;ats;'ejm m;,IlI;'onV#f_! p;,Its'ot SE#z;d;is;'jatd;'evI3t; t'ys;itS;_! dv;'es;t;I p;Vd;d;Is;'jattR;'i p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I V#d;'in_ p@-rats'Ent dv;'es;t;I t'otS;ka# t@-r;'ittsat;S'Es;t; t'ys;itS;_! vOs;Ims'ot s;Imn'AttsVt; p@-rats'Ent dv'A (en)s'i:(ru) n'ojl t'otS;ka# dv;'e t'ys;itS;i d;E2v;Itn'AttsVt; p@-rats'Ent dv;'es;t;I V#d;'in_ t'otS;ka# n'ojl tR;'iv'os;im;_!s;'ejm d;'evI3t;S'Es;t;_!tR;'i p@-rats'Ent dv'A (en)s'i:(ru) V#d;'in_ t'otS;ka# n'ojl tR;'iv'os;im;_!s;'ejm d;'evI3t;S'Es;t;_!tR;'i p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I V#d;'in_ p@-rats'Ent dv;'es;t;I t'otS;ka# tS;it'yr;ista# d;E2v;Itn'AttsVt; t'ys;itS;_! S,E#s;t;s'ot t@-r;'ittsat;s;'ejm p@-rats'Ent dv'A (en)s'i:(ru) n'ojl t'otS;ka# n'ojldv'A_! tR;'is;'ejm_!p;'At; p@-rats'Ent dv'AttsVt; (en)s'i:(ru) p@-rats'Ent dv;'es;t;I t'otS;ka# t@-r;'ittsVt; t'ys;itS;_! v'os;I3md;E2s;ats;'ejm p@-rats'Ent dv'A (en)s'i:(ru) n'ojl t'otS;ka# n'ojltS;It'yR;I_! p;'At;Vd;'in__!tS;It'yR;I p@-rats'Ent dv;'es;t;I t'otS;ka# p;,Its'ot v'os;I3md;E2s;atdv;'e t'ys;itS;i_! s;,Ims'ot t@-r;'ittsat;d;'evI3t; p@-rats'Ent dv'A (en)s'i:(ru) n'ojl t'otS;ka# dv;'es;t;I SE#stn'AttsVt; t'ys;itS;_! d;Iv;its'ot s'o@-rOkdv'A p@-rats'Ent dv;'es;t;I t'otS;ka# s;,Ims'ot p;Vd;d;Is;'jat t'ys;itS;_! p;,Its'ot d;iv;In'ostOtR;'i p@-rats'Ent dv'A (en)s'i:(ru) n'ojl t'otS;ka# tS;it'yr;ista# s;'emd;E2s;Vt t'ys;itS;_! t@-r;'ista# v'os;im; p@-rats'Ent dv;'es;t;I t'otS;ka# n'ojld;'evI3t;_! p;'at;n'ojl_!dv'A p@-rats'Ent dv'A (en)s'i:(ru) n'ojl t'otS;ka# st'o s'o@-rOkdv;'e t'ys;itS;i_! p;,Its'ot s;Imn'AttsVt; p@-rats'Ent dv;'es;t;I
+-dv'A (en)s'i:(ru) v'os;im; t'otS;ka# vOs;Ims'ot dv'Attsat;d;'evI3t; t'ys;itS;_! s;,Ims'ot SE#z;d;is;'jatv'os;im; p@-rats'Ent dv'AttsVt; (en)s'i:(ru) p@-rats'Ent dv;'es;t;I p@-rats'Ent dv'A (en)s'i:(ru) p;'At; t'otS;ka# S,E#s;t;s'ot SE#z;d;is;'jatd;'evI3t; t'ys;itS;_! s'o@-rOkV#d;'in_ p@-rats'Ent dv'AttsVt; tS;It'yR;I t'otS;ka# p;Vd;d;Is;'jatd;'evI3t; t'ys;itS;_! S,E#s;t;s'ot d;iv;In'ostOd;'evI3t; p@-rats'Ent dv'A (en)s'i:(ru) d;'es;It; t'otS;ka# dv'A m;,IlI;'ona#_! S,E#s;t;s'ot p;Vd;d;Is;'jatdv;'e t'ys;itS;i_! t@-r;'ista# d;iv;In'ostOV#d;'in_ p@-rats'Ent dv'AttsVt; d;'es;It; t'otS;ka# dv;'es;t;I SE#z;d;is;'jatp;'At; t'ys;itS;_! dv;'es;t;I t@-r;'ittsat;v'os;im; p@-rats'Ent dv'A (en)s'i:(ru) d;'es;It; t'otS;ka# dv'A m;,IlI;'ona#_! S,E#s;t;s'ot p;Vd;d;Is;'jatdv;'e t'ys;itS;i_! t@-r;'ista# d;iv;In'ostOV#d;'in_ p@-rats'Ent dv'AttsVt; (en)z'Ed(ru) p@-rats'Ent dv'AttsVt; (en)'Em(ru) p@-rats'Ent dv;'e t'ys;itS;i d;'es;It; t'otS;ka# n'ojltR;'i_!s;'ejm v'os;im;S'Es;t;_!p;'At; p@-rats'Ent dv'A (en)s'i:(ru) d;E2v;Itn'AttsVt; t'otS;ka# s;,Ims'ot d;iv;In'ostOv'os;im; t'ys;itS;_! p;,Its'ot t@-r;'ittsat;s;'ejm p@-rats'Ent dv'AttsVt; (en)v'i:(ru) p@-rats'Ent dv;'es;t;I V#d;'in_ t'otS;ka# st'o s;'emd;E2s;VttS;It'yR;I t'ys;itS;i_! st'o v'os;I3md;E2s;atv'os;im; p@-rats'Ent dv'AttsVt; (en)'eI(ru) p@-rats'Ent dv;'es;t;I V#d;'in_ t'otS;ka# tS;it'yr;ista# v'os;I3md;E2s;atv'os;im; t'ys;itS;_! p;,Its'ot d;E2v;Itn'AttsVt; p@-rats'Ent dv'A (en)s'i:(ru) V#d;'in_ t'otS;ka# tS;it'yr;ista# v'os;I3md;E2s;atv'os;im; t'ys;itS;_! p;,Its'ot d;E2v;Itn'AttsVt; p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I V#d;'in_ p@-rats'Ent dv;'es;t;I t'otS;ka# vOs;Ims'ot p;Vd;d;Is;'jats;'ejm t'ys;itS;_! tS;it'yr;ista#" "C0.87569253%200%200%201%200.36817%2C-0.2019%201.0387963%2C1.0387963%200%200%201%200.419637%2C-0.02375%20c%200.30087%2C0.04514%200.582739%2C0.216942%200.750593%2C0.470308%200.09502%2C0.142517%200.153603%2C0.308788%200.18844%2C0.478226%200.03484%2C0.168646%200.0475%2C0.340459%200.05701%2C0.513064%200.03167%2C0.601741%200.03167%2C1.205067%200.01426%2C1.808392%20-0.01426%2C0.526524%20-0.04355%2C1.0673%20-0.253366%2C1.549486%20-0.271575%2C0.619159%20-0.817101%2C1.08155%20-1.405383%2C1.414092%20a%205.5835296%2C5.5835296%200%200%201%20-1.257323%2C0.512272%20c%200.38163%2C1.219319%200.580363%2C2.56532%200.580363%2C3.93349%20a%2013.935071%2C13.935071%200%200%201%20-0.106901%2C1.682498%2010.264446%2C10.264446%200%200%200%205.054631%2C-8.829768%20c%200%2C-5.669041%20-4.59699%2C-10.2652391%20-10.265238%2C-10.2652391%20z%20M%2010.037865%2C19.798537%20v%201.174188%20a%201.488519%2C1.488519%200%200%201%200.857482%2C0.286619%201.3760882%2C1.3760882%200%200%201%200.440222%2C0.538402%20c%200.0966%2C0.213775%200.131432%2C0.456056%200.09184%2C0.687252%20a%201.1821057%2C1.1821057%200%200%201%20-0.262867%2C0.560568%201.3040376%2C1.3040376%200%200%201%20-0.502772%2C0.36263%201.3760882%2C1.3760882%200%200%201%20-0.623119%2C0.0966%20v%202.953287%20l%206.145683%2C-3.33175%20-6.145683%2C-3," "ru sum strings"
++test_phon ru "(en)s'i:(ru) n'ojl; t'otS;ka# v'os;I3md;E2s;ats;'ejm m;,IlI;'onV#f_! p;,Its'ot SE#z;d;is;'jatd;'evI3t; t'ys;itS;_! dv;'es;t;I p;Vd;d;Is;'jattR;'i p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I V#d;'in_ p@-rats'Ent dv;'es;t;I t'otS;ka# tr;'ittsat;S'Es;t; t'ys;itS;_! vOs;Ims'ot s;Imn'AttsVt; p@-rats'Ent dv'A (en)s'i:(ru) n'ojl; t'otS;ka# dv;'e t'ys;itS;i d;E2v;Itn'AttsVt; p@-rats'Ent dv;'es;t;I V#d;'in_ t'otS;ka# n'ojl; tR;'iv'os;im;_!s;'ejm d;'evI3t;S'Es;t;_!tR;'i p@-rats'Ent dv'A (en)s'i:(ru) V#d;'in_ t'otS;ka# n'ojl; tR;'iv'os;im;_!s;'ejm d;'evI3t;S'Es;t;_!tR;'i p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I V#d;'in_ p@-rats'Ent dv;'es;t;I t'otS;ka# tS;it'yr;ista# d;E2v;Itn'AttsVt; t'ys;itS;_! S,E#s;t;s'ot tr;'ittsat;s;'ejm p@-rats'Ent dv'A (en)s'i:(ru) n'ojl; t'otS;ka# n'ojl;dv'A_! tR;'is;'ejm_!p;'At; p@-rats'Ent dv'AttsVt; (en)s'i:(ru) p@-rats'Ent dv;'es;t;I t'otS;ka# tr;'ittsVt; t'ys;itS;_! v'os;I3md;E2s;ats;'ejm p@-rats'Ent dv'A (en)s'i:(ru) n'ojl; t'otS;ka# n'ojl;tS;It'yR;I_! p;'At;Vd;'in__!tS;It'yR;I p@-rats'Ent dv;'es;t;I t'otS;ka# p;,Its'ot v'os;I3md;E2s;atdv;'e t'ys;itS;i_! s;,Ims'ot tr;'ittsat;d;'evI3t; p@-rats'Ent dv'A (en)s'i:(ru) n'ojl; t'otS;ka# dv;'es;t;I SE#stn'AttsVt; t'ys;itS;_! d;Iv;its'ot s'o@-rOkdv'A p@-rats'Ent dv;'es;t;I t'otS;ka# s;,Ims'ot p;Vd;d;Is;'jat t'ys;itS;_! p;,Its'ot d;iv;In'ostOtR;'i p@-rats'Ent dv'A (en)s'i:(ru) n'ojl; t'otS;ka# tS;it'yr;ista# s;'emd;E2s;Vt t'ys;itS;_! tr;'ista# v'os;im; p@-rats'Ent dv;'es;t;I t'otS;ka# n'ojl;d;'evI3t;_! p;'at;n'ojl;_!dv'A p@-rats'Ent dv'A (en)s'i:(ru) n'ojl; t'otS;ka# st'o s'o@-rOkdv;'e t'ys;itS;i_! p;,Its'ot s;Imn'AttsVt; p@-rats'Ent dv;'es;t;I t'otS;ka# st'o p;Vd;d;Is;'jattR;'i t'ys;itS;i_! S,E#s;t;s'ot tR;'i p@-rats'E
++dv'A (en)s'i:(ru) v'os;im; t'otS;ka# vOs;Ims'ot dv'Attsat;d;'evI3t; t'ys;itS;_! s;,Ims'ot SE#z;d;is;'jatv'os;im; p@-rats'Ent dv'AttsVt; (en)s'i:(ru) p@-rats'Ent dv;'es;t;I p@-rats'Ent dv'A (en)s'i:(ru) p;'At; t'otS;ka# S,E#s;t;s'ot SE#z;d;is;'jatd;'evI3t; t'ys;itS;_! s'o@-rOkV#d;'in_ p@-rats'Ent dv'AttsVt; tS;It'yR;I t'otS;ka# p;Vd;d;Is;'jatd;'evI3t; t'ys;itS;_! S,E#s;t;s'ot d;iv;In'ostOd;'evI3t; p@-rats'Ent dv'A (en)s'i:(ru) d;'es;It; t'otS;ka# dv'A m;,IlI;'ona#_! S,E#s;t;s'ot p;Vd;d;Is;'jatdv;'e t'ys;itS;i_! tr;'ista# d;iv;In'ostOV#d;'in_ p@-rats'Ent dv'AttsVt; d;'es;It; t'otS;ka# dv;'es;t;I SE#z;d;is;'jatp;'At; t'ys;itS;_! dv;'es;t;I tr;'ittsat;v'os;im; p@-rats'Ent dv'A (en)s'i:(ru) d;'es;It; t'otS;ka# dv'A m;,IlI;'ona#_! S,E#s;t;s'ot p;Vd;d;Is;'jatdv;'e t'ys;itS;i_! tr;'ista# d;iv;In'ostOV#d;'in_ p@-rats'Ent dv'AttsVt; (en)z'Ed(ru) p@-rats'Ent dv'AttsVt; (en)'Em(ru) p@-rats'Ent dv;'e t'ys;itS;i d;'es;It; t'otS;ka# n'ojl;tR;'i_!s;'ejm v'os;im;S'Es;t;_!p;'At; p@-rats'Ent dv'A (en)s'i:(ru) d;E2v;Itn'AttsVt; t'otS;ka# s;,Ims'ot d;iv;In'ostOv'os;im; t'ys;itS;_! p;,Its'ot tr;'ittsat;s;'ejm p@-rats'Ent dv'AttsVt; (en)v'i:(ru) p@-rats'Ent dv;'es;t;I V#d;'in_ t'otS;ka# st'o s;'emd;E2s;VttS;It'yR;I t'ys;itS;i_! st'o v'os;I3md;E2s;atv'os;im; p@-rats'Ent dv'AttsVt; (en)'eI(ru) p@-rats'Ent dv;'es;t;I V#d;'in_ t'otS;ka# tS;it'yr;ista# v'os;I3md;E2s;atv'os;im; t'ys;itS;_! p;,Its'ot d;E2v;Itn'AttsVt; p@-rats'Ent dv'A (en)s'i:(ru) V#d;'in_ t'otS;ka# tS;it'yr;ista# v'os;I3md;E2s;atv'os;im; t'ys;itS;_! p;,Its'ot d;E2v;Itn'AttsVt; p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I p@-rats'Ent dv;'es;t;I V#d;'in_ p@-rats'Ent dv;'es;t;I t'otS;ka# vOs;Ims'ot p;Vd;d;Is;'jats;'ejm t'ys;itS;_! tS;it'yr;ista# v'os;I3md;E2s;atdv'A p@-rats'Ent dv'A (en)s'i:(ru) n'ojl; t'otS;ka# dv;'e" "C0.87569253%200%200%201%200.36817%2C-0.2019%201.0387963%2C1.0387963%200%200%201%200.419637%2C-0.02375%20c%200.30087%2C0.04514%200.582739%2C0.216942%200.750593%2C0.470308%200.09502%2C0.142517%200.153603%2C0.308788%200.18844%2C0.478226%200.03484%2C0.168646%200.0475%2C0.340459%200.05701%2C0.513064%200.03167%2C0.601741%200.03167%2C1.205067%200.01426%2C1.808392%20-0.01426%2C0.526524%20-0.04355%2C1.0673%20-0.253366%2C1.549486%20-0.271575%2C0.619159%20-0.817101%2C1.08155%20-1.405383%2C1.414092%20a%205.5835296%2C5.5835296%200%200%201%20-1.257323%2C0.512272%20c%200.38163%2C1.219319%200.580363%2C2.56532%200.580363%2C3.93349%20a%2013.935071%2C13.935071%200%200%201%20-0.106901%2C1.682498%2010.264446%2C10.264446%200%200%200%205.054631%2C-8.829768%20c%200%2C-5.669041%20-4.59699%2C-10.2652391%20-10.265238%2C-10.2652391%20z%20M%2010.037865%2C19.798537%20v%201.174188%20a%201.488519%2C1.488519%200%200%201%200.857482%2C0.286619%201.3760882%2C1.3760882%200%200%201%200.440222%2C0.538402%20c%200.0966%2C0.213775%200.131432%2C0.456056%200.09184%2C0.687252%20a%201.1821057%2C1.1821057%200%200%201%20-0.262867%2C0.560568%201.3040376%2C1.3040376%200%200%201%20-0.502772%2C0.36263%201.3760882%2C1.3760882%200%200%201%20-0.623119%2C0.0966%20v%202.953287%20l%206.145683%2C-3.33175%20-6.145683%2C-3," "ru sum strings"
+ 
+ # A deleted phoneme at the start of a word should preserve the sourceix property.
+ test_phon en-GB-x-gbcwmd "aI 'av" "I have"
+-- 
+2.43.0
+
