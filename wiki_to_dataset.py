@@ -34,6 +34,8 @@ class progressbar_obj:
         self.show(self.next)
 
 def check_it(replica: str, link: str):
+    if not replica:
+        return False
     if 'potatos' in link:
         return False
     if '[' in replica or ']' in replica:
@@ -70,9 +72,12 @@ if __name__ == '__main__':
                     if len(list_href) != 0:
                         link = re.findall(r'^(https://[\w\/.\:]+.wav)$', list_href[0][1])
                         if len(link) != 0:
-                            if self.replica not in replicas and check_it(self.replica, link[0]):
-                                replicas.append(self.replica.replace('»', '').replace('«', '').replace('"', ''))
-                                urls.append(link[0])
+                            replica = self.replica.replace('»', '').replace('«', '').replace('"', '')
+                            url = link[0]
+                            # We do not check replicas to be unique, only urls
+                            if check_it(replica, url) and (url not in urls):
+                                replicas.append(replica)
+                                urls.append(url)
                                 self.replica = ""
         def handle_data(self, data):
             if self.start_tag:
