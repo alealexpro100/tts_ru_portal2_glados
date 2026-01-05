@@ -22,13 +22,11 @@ python3 -m piper.train fit \
   --data.voice_name "glados" \
   --data.csv_path metadata.csv \
   --data.audio_dir wav \
-  --data.batch_size 16 \
-  --data.num_workers 7 \
+  --data.batch_size 8 \
   --model.sample_rate 22050 \
   --data.espeak_voice "ru" \
   --data.cache_dir cache \
   --data.config_path config.json \
-  --data.batch_size 16 \
   --trainer.accelerator "gpu" \
   --trainer.max_epochs 1000 \
   --ckpt_path $ckpt_name
