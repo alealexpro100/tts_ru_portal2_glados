@@ -73,6 +73,7 @@ if __name__ == '__main__':
                             if self.replica not in replicas and check_it(self.replica, link[0]):
                                 replicas.append(self.replica.replace('»', '').replace('«', '').replace('"', ''))
                                 urls.append(link[0])
+                                self.replica = ""
         def handle_data(self, data):
             if self.start_tag:
                 self.replica = data
