@@ -7,6 +7,23 @@ import os
 import sys
 import time
 
+WAV_IGNORE_LIST = [
+    "GLaDOS_sp_catapult_fling_sphere_peek_failuretwo02_ru",
+    "GLaDOS_coop_privatetalk_both01_ru",
+    "GLaDOS_coop_privatetalk_both04_ru",
+    "GLaDOS_coop_privatetalk_mix04_ru",
+    "GLaDOS_evilagainsamples04_ru",
+    "GLaDOS_fgbgladostransfer09_ru",
+    "GLaDOS_fgbgladostransfer12_ru",
+    "GLaDOS_fgbgladostransfer13_ru",
+    "GLaDOS_fgbturrets02_ru",
+    "GLaDOS_mp_bridgbuilding02_ru",
+    "GLaDOS_gladosbattle_xfer08_ru",
+    "GLaDOS_mp_coop_paint_longjump_intro19_ru",
+    "GLaDOS_mp_coop_paint_longjump_intro20_ru",
+    "GLaDOS_mp_coop_paint_longjump_intro21_ru",
+]
+
 # based on https://stackoverflow.com/a/34482761
 class progressbar_obj:
     def __init__(self, count, prefix="", size=60, out=sys.stdout):
@@ -42,7 +59,7 @@ def check_it(replica: str, link: str):
         return False
     if 'НЕТ!' in replica or 'А-а!' in replica:
         return  False
-    if 'GLaDOS_sp_catapult_fling_sphere_peek_failuretwo02_ru' in link:
+    if link.split('/')[-1].replace('.wav', '') in WAV_IGNORE_LIST:
         return False
     return True
 
