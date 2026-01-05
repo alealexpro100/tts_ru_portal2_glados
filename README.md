@@ -25,7 +25,11 @@ Steps:
 ### Train
 
 Read instruction in original repo. Included in this repo script `train.sh` should work.
-Do not forget about `tensorboard` for metrics: `tensorboard --logdir lightning_logs`.
+Do not forget about `tensorboard` for metrics: `tensorboard --logdir lightning_logs`. [URL](http://localhost:6007/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss_d%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss_g%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22val_loss%22%7D%5D&darkMode=true#timeseries&runSelectionState=eyJ2ZXJzaW9uXzAiOmZhbHNlLCJ2ZXJzaW9uXzEiOmZhbHNlfQ%3D%3D) with pinned metrics.
+
+It becomes listenable after 50-60 epoch and starts to be similar after 200 epoch.
+
+Training example on kaggle: https://www.kaggle.com/code/alexeynasibulin/glados-tts-ru-piper
 
 ## Notes
 
