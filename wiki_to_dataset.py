@@ -51,7 +51,6 @@ if __name__ == '__main__':
     replicas, urls = [], []
     class MyHTMLParser(HTMLParser):
         start_tag=False
-        link = ""
         replica = ""
         is_portal2=False
         def handle_starttag(self, tag, attrs):
@@ -71,10 +70,9 @@ if __name__ == '__main__':
                     if len(list_href) != 0:
                         link = re.findall(r'^(https://[\w\/.\:]+.wav)$', list_href[0][1])
                         if len(link) != 0:
-                            if self.replica not in replicas and check_it(self.replica, self.link):
+                            if self.replica not in replicas and check_it(self.replica, link[0]):
                                 replicas.append(self.replica.replace('»', '').replace('«', '').replace('"', ''))
                                 urls.append(link[0])
-                self.link=""
         def handle_data(self, data):
             if self.start_tag:
                 self.replica = data
